@@ -1,5 +1,8 @@
 # shang_pin_miao_sha —— 商品秒杀 · Redis 热 Key 治理
 
+[![CI](https://github.com/llylwl/shang_pin_miao_sha/actions/workflows/ci.yml/badge.svg)](https://github.com/llylwl/shang_pin_miao_sha/actions/workflows/ci.yml)
+[![Release](https://github.com/llylwl/shang_pin_miao_sha/actions/workflows/release.yml/badge.svg)](https://github.com/llylwl/shang_pin_miao_sha/actions/workflows/release.yml)
+
 > 对应方案：**客户端 / 代理端 / Redis 服务端 三层监控热 Key + 打散 + 二级缓存 + 强一致数据本地预扣减**
 > 技术栈：Java 21 · Spring Boot 3.2.5 · MySQL 8.0 · Redis 6+ · MyBatis · Caffeine · Lettuce · Micrometer
 
