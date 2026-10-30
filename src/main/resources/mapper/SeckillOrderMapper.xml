@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hzp.miaosha.mapper.SeckillOrderMapper">
+
+    <insert id="insert" parameterType="com.hzp.miaosha.domain.po.SeckillOrderPo"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_seckill_order
+            (order_no, activity_id, product_id, user_id, quantity, amount, status, create_time, pay_time)
+        VALUES (#{orderNo}, #{activityId}, #{productId}, #{userId}, #{quantity}, #{amount},
+                #{status}, #{createTime}, #{payTime})
+    </insert>
+
+    <select id="countValidOrder" resultType="int">
+        SELECT COUNT(1)
+        FROM t_seckill_order
+        WHERE activity_id = #{activityId}
+          AND user_id = #{userId}
+          AND status &lt;&gt; 2
+    </select>
+
+    <select id="countByActivityId" resultType="int">
+        SELECT COUNT(1)
+        FROM t_seckill_order
+        WHERE activity_id = #{activityId}
+    </select>
+
+    <select id="selectByUserId" resultType="com.hzp.miaosha.domain.po.SeckillOrderPo">
+        SELECT id, order_no, activity_id, product_id, user_id, quantity, amount, status, create_time, pay_time
+        FROM t_seckill_order
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

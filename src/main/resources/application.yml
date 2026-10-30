@@ -1,0 +1,144 @@
+# =====================================================================
+#  shang_pin_miao_sha —— 商品秒杀热 Key 治理
+#  生产建议：敏感信息（密码）用环境变量注入，不要提交明文密码
+# =====================================================================
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  application:
+    name: shang-pin-miao-sha
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DB:shang_pin_miao_sha}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&connectionCollation=utf8mb4_0900_ai_ci
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:root}
+    hikari:
+      pool-name: MiaoShaHikariPool
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-timeout: 3000
+      connection-test-query: SELECT 1
+  sql:
+    init:
+      # always：启动时执行 db/schema.sql + db/data.sql（两者均幂等）
+      # 如果生产环境已由 DBA 手工初始化，改成 never
+      mode: ${SQL_INIT_MODE:always}
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/data.sql
+      encoding: UTF-8
+      continue-on-error: false
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DB:0}
+      timeout: 1500ms
+      connect-timeout: 1500ms
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 64
+          max-idle: 32
+          min-idle: 8
+          max-wait: 1000ms
+        shutdown-timeout: 200ms
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+# ---------------------------------------------------------------------
+# 热 Key 治理核心配置
+# ---------------------------------------------------------------------
+miao-sha:
+  hot-key:
+    # 是否启用「客户端本地统计 -> 自动本地缓存」联动
+    auto-local-cache-enabled: true
+    # 判定为热 Key 的 QPS 阈值（超过即进入本地缓存 + 上报）
+    hot-qps-threshold: 1000
+    # 红色告警阈值（触发打散建议与详细日志）
+    red-qps-threshold: 2000
+    # 统计时间窗口（秒）
+    window-seconds: 10
+    # 期望误差（Count-Min Sketch ε）
+    cms-epsilon: 0.01
+    # 置信度（Count-Min Sketch δ）
+    cms-delta: 0.001
+    # 上报间隔（毫秒）
+    report-interval-ms: 5000
+    # 单次扫描最多上报的 TopN 数量
+    top-n: 50
+    # 本地二级缓存容量上限
+    local-cache-max-size: 2000
+    # 本地缓存过期时间（秒），也是「Redis 宕机后可继续服务的兜底时长」
+    local-cache-expire-seconds: 10
+    # 打散副本数（必须 >= 1，集群 master 数的 2~4 倍较合适）
+    replica-count: 8
+    # 打散副本与主 Key 的过期时间（秒）
+    product-cache-seconds: 600
+  seckill:
+    # 每个实例从 Redis 一次领取的库存配额（本地预扣减）
+    stock-batch-size: 100
+    # 本地配额耗尽后，是否允许再回源 Redis 领取
+    allow-refill: true
+    # 单实例本地配额上限，防止内存泄漏
+    max-local-stock: 5000
+    # 活动开始前多久预热（秒）
+    warm-up-before-seconds: 1800
+    # 预热扫描间隔（毫秒）
+    warm-up-scan-interval-ms: 60000
+
+# ---------------------------------------------------------------------
+# MyBatis（阿里规约：禁止 Map 传参，统一 POJO / DTO）
+# ---------------------------------------------------------------------
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.hzp.miaosha.domain.po
+  configuration:
+    map-underscore-to-camel-case: true
+    default-statement-timeout: 3000
+    cache-enabled: false
+
+logging:
+  level:
+    root: INFO
+    com.hzp.miaosha: INFO
+    com.hzp.miaosha.mapper: INFO
+    org.springframework.jdbc.datasource.init: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,hotkeys
+  endpoint:
+    health:
+      show-details: always
+      # 默认只有 UP 映射为 200。Redis 不可用时整体状态为 OUT_OF_SERVICE，
+      # 但服务仍可读本地缓存，因此这里显式把 OUT_OF_SERVICE 也映射为 200，
+      # 由响应体里的 status / hotKey 组件反映降级情况（适合 K8s 存活探针）。
+      status:
+        http-mapping:
+          OUT_OF_SERVICE: 200
+          DOWN: 503
+  health:
+    redis:
+      # 关闭 Spring Data Redis 自带健康组件，改由 hotKey 组件统一报告降级状态。
+      enabled: false
+  metrics:
+    tags:
+      application: ${spring.application.name}

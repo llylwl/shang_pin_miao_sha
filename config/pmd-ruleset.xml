@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PMD 7 静态检查规则集（与《阿里巴巴 Java 开发手册》重合度较高的规则）。
+
+  为什么不是直接用 p3c-pmd 规则集：
+    p3c-pmd 2.1.1 的规则实现编译在 PMD 6 API 之上，而 PMD 6 无法解析 JDK 21 字节码
+    （Unsupported class file major version 65）。二者不可兼得，因此改用 PMD 7 内置规则。
+
+  执行：mvn -Ppmd -DskipTests compile pmd:check
+-->
+<ruleset name="ShangPinMiaoSha"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>商品秒杀热 Key 治理项目静态检查规则</description>
+
+    <!-- 日志与异常（阿里规约：日志规约、异常处理） -->
+    <rule ref="category/java/bestpractices.xml/SystemPrintln"/>
+    <rule ref="category/java/bestpractices.xml/AvoidPrintStackTrace"/>
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock"/>
+
+    <!-- 集合（阿里规约：集合处理，推荐 isEmpty 而非 size()==0） -->
+    <rule ref="category/java/bestpractices.xml/UseCollectionIsEmpty"/>
+
+    <!-- 无用代码（阿里规约：声明未使用） -->
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
+
+    <!-- 命名（阿里规约：命名风格） -->
+    <rule ref="category/java/codestyle.xml/ShortClassName"/>
+    <rule ref="category/java/codestyle.xml/UnnecessaryModifier"/>
+
+    <!-- 并发（阿里规约：并发处理，禁止直接使用 ThreadGroup） -->
+    <rule ref="category/java/multithreading.xml/AvoidThreadGroup"/>
+
+    <exclude-pattern>.*/test/.*</exclude-pattern>
+</ruleset>

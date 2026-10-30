@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hzp.miaosha.mapper.SeckillActivityMapper">
+
+    <sql id="Base_Column_List">
+        id, activity_no, activity_name, start_time, end_time, total_stock, remain_stock,
+        status, create_time, update_time
+    </sql>
+
+    <select id="selectById" resultType="com.hzp.miaosha.domain.po.SeckillActivityPo">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM t_seckill_activity
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultType="com.hzp.miaosha.domain.po.SeckillActivityPo">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM t_seckill_activity
+        ORDER BY start_time
+    </select>
+
+    <update id="decreaseRemainStock">
+        UPDATE t_seckill_activity
+        SET remain_stock = remain_stock - #{quantity}
+        WHERE id = #{id}
+          AND remain_stock &gt;= #{quantity}
+    </update>
+</mapper>
