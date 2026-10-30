@@ -291,3 +291,6 @@ A：启动加 `-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8`；`pom.xml` 的 s
 
 **Q：想跑集群模式？**
 A：把 `spring.data.redis` 换成 `cluster.nodes`，并开启 `RedisPubSubConfig`（`miao-sha.redis.pubsub-enabled=true`）；打散副本数建议 ≥ master 数。
+
+本次改动由b设备完成
+
